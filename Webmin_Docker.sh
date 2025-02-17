@@ -101,10 +101,8 @@ EOF
 
 # Restart BIND to apply changes
 echo "Restarting BIND9..."
-sudo systemctl restart bind9
-
-# Enable BIND to start on boot
-sudo systemctl enable bind9
+sudo systemctl restart named
+sudo systemctl enable named
 
 ## 5. Update & Restart Webmin to apply changes
 sudo apt update
