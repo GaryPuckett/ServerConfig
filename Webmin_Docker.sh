@@ -54,7 +54,12 @@ sudo apt-get install -y webmin --install-recommends
 
 ## 3. Install Docker Webmin Module
 echo "Installing the Docker Webmin module..."
-sudo /usr/share/webmin/install-module.pl https://github.com/dave-lang/webmin-docker/releases/latest/download/docker.wbm.gz
+wget -O docker.wbm.gz https://github.com/dave-lang/webmin-docker/releases/latest/download/docker.wbm.gz
+gunzip docker.wbm.gz
+sudo /usr/share/webmin/install-module.pl docker.wbm
+
+# Restart Webmin to apply changes
+sudo systemctl restart webmin
 
 ## Fin
 # Get the main network interface IP
