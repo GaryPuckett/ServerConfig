@@ -58,7 +58,7 @@ sudo apt-get install -y webmin --install-recommends
 ## 3. Install Docker Webmin Module
 echo "Installing the Docker Webmin module..."
 wget -O docker.wbm.gz https://github.com/dave-lang/webmin-docker/releases/latest/download/docker.wbm.gz
-gunzip docker.wbm.gz
+gunzip -f docker.wbm.gz
 sudo /usr/share/webmin/install-module.pl docker.wbm
 
 ## 4. Install and Configure Bind9
