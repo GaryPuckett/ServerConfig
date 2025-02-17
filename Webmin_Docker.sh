@@ -1,9 +1,20 @@
 #!/bin/bash
 set -e
 
-#-----------------------------------------------
-# 1. Install Docker and Docker Compose
-#-----------------------------------------------
+## SSH Oneliner
+#  curl -fsSL https://raw.githubusercontent.com/GaryPuckett/Hypercuube_Scripts/main/Webmin_Docker.sh | sudo bash
+
+## 0. Set hostname before continuing
+echo "Setting hostname to hypercuube.net..."
+sudo hostnamectl set-hostname hypercuube.net
+
+# Update /etc/hosts
+echo "127.0.0.1 hypercuube.net" | sudo tee -a /etc/hosts
+
+# Verify the change
+echo "Hostname is now: $(hostname)"
+
+## 1. Install Docker and Docker Compose
 echo "Updating package index..."
 sudo apt-get update
 
@@ -24,13 +35,11 @@ sudo apt-get update
 echo "Installing Docker Engine, CLI, containerd, and Docker Compose plugin..."
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
-# (Optional) Add current user to docker group to run docker without sudo.
+# Add current user to docker group to run docker without sudo.
 echo "Adding current user ($USER) to docker group..."
 sudo usermod -aG docker $USER
 
-#-----------------------------------------------
-# 2. Install Webmin
-#-----------------------------------------------
+## 2. Install Webmin
 echo "Downloading Webmin repository setup script..."
 curl -o webmin-setup-repos.sh https://raw.githubusercontent.com/webmin/webmin/master/webmin-setup-repos.sh
 
@@ -43,15 +52,16 @@ sudo apt-get update
 echo "Installing Webmin..."
 sudo apt-get install -y webmin --install-recommends
 
-#-----------------------------------------------
-# 3. Install Docker Webmin Module
-#-----------------------------------------------
+## 3. Install Docker Webmin Module
 echo "Installing the Docker Webmin module..."
 sudo /usr/share/webmin/install-module.pl https://github.com/dave-lang/webmin-docker/releases/latest/download/docker.wbm.gz
 
+## Fin
+# Get the main network interface IP
+SERVER_IP=$(ip -4 route get 1.1.1.1 | awk '{print $7; exit}')
+
 echo "Installation complete!"
 echo "-------------------------------------------------"
-echo "Docker and Docker Compose have been installed."
-echo "Webmin is available at: https://<your_server_ip>:10000"
-echo "The Docker module should appear under the Servers menu in Webmin."
+echo "Hostname is: $(hostname)"
+echo "Webmin is available at: https://$SERVER_IP:10000"
 echo "You may need to log out and log back in for group changes to take effect."
