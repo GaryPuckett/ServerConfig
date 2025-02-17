@@ -4,12 +4,15 @@ set -e
 ## SSH Oneliner
 #  curl -fsSL https://raw.githubusercontent.com/GaryPuckett/Hypercuube_Scripts/main/Webmin_Docker.sh | sudo bash
 
+# Get the main network interface IP
+SERVER_IP=$(ip -4 route get 1.1.1.1 | awk '{print $7; exit}')
+SERVER_IPV6=$(ip -6 route get 2001:4860:4860::8888 2>/dev/null | awk '{print $7; exit}')
+DOMAIN="hypercuube.net"
+
 ## 0. Set hostname before continuing
 echo "Setting hostname to hypercuube.net..."
-sudo hostnamectl set-hostname hypercuube.net
-
-# Update /etc/hosts
-echo "127.0.0.1 hypercuube.net" | sudo tee -a /etc/hosts
+sudo hostnamectl set-hostname $DOMAIN
+echo "127.0.0.1 $DOMAIN" | sudo tee -a /etc/hosts
 
 # Verify the change
 echo "Hostname is now: $(hostname)"
@@ -58,12 +61,59 @@ wget -O docker.wbm.gz https://github.com/dave-lang/webmin-docker/releases/latest
 gunzip docker.wbm.gz
 sudo /usr/share/webmin/install-module.pl docker.wbm
 
-# Restart Webmin to apply changes
+## 4. Install and Configure Bind9
+# Install BIND9 if not installed
+echo "Installing BIND9..."
+sudo apt update && sudo apt install -y bind9 bind9-utils bind9-dnsutils
+
+# Configure the DNS Zone
+echo "Setting up BIND zone for $DOMAIN..."
+sudo bash -c "cat > /etc/bind/named.conf.local" <<EOF
+zone "$DOMAIN" {
+    type master;
+    file "/etc/bind/db.$DOMAIN";
+};
+EOF
+
+echo "Creating zone file for $DOMAIN..."
+# Create the zone file with both A and AAAA records.
+sudo bash -c "cat > /etc/bind/db.$DOMAIN" <<EOF
+\$TTL 86400
+@    IN  SOA  ns1.$DOMAIN. ns2.$DOMAIN. (
+          $(date +%Y%m%d)01  ; Serial
+          3600        ; Refresh
+          1800        ; Retry
+          604800      ; Expire
+          86400       ; Minimum TTL
+)
+     IN  NS   ns.$DOMAIN.
+
+; IPv4 address record
+@    IN  A    $SERVER_IP
+
+; IPv6 address record
+@    IN  AAAA $SERVER_IPV6
+
+; www subdomain records
+www  IN  A    $SERVER_IP
+www  IN  AAAA $SERVER_IPV6
+EOF
+
+# Restart BIND to apply changes
+echo "Restarting BIND9..."
+sudo systemctl restart bind9
+
+# Enable BIND to start on boot
+sudo systemctl enable bind9
+
+## 5. Update & Restart Webmin to apply changes
+sudo apt update
+sudo apt full-upgrade -y
+sudo apt autoremove -y
+sudo apt autoclean -y
 sudo systemctl restart webmin
 
 ## Fin
-# Get the main network interface IP
-SERVER_IP=$(ip -4 route get 1.1.1.1 | awk '{print $7; exit}')
 
 echo "Installation complete!"
 echo "-------------------------------------------------"
