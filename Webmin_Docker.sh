@@ -18,9 +18,9 @@ echo "Hostname: $(hostname)"
 
 read -p "Change Hostname? (leave blank to keep): " NEW_HOSTNAME
 if [[ -n "$NEW_HOSTNAME" ]]; then
-  sudo hostnamectl set-hostname "$NEW_HOSTNAME"
-  echo "127.0.0.1 $NEW_HOSTNAME" | sudo tee -a /etc/hosts
-  echo "Hostname updated to: $(hostname)"
+    sudo hostnamectl set-hostname "$NEW_HOSTNAME"
+    echo "127.0.0.1 $NEW_HOSTNAME" | sudo tee -a /etc/hosts
+    echo "Hostname updated to: $(hostname)"
 fi
 
 ## 1. Install Docker and Docker Compose
@@ -157,32 +157,32 @@ EOF
 
 # NS1 Records
 if [ -n "$SERVER_IP" ]; then
-  echo "Adding A record for ns1.$SERVER_IP..."
-  sudo bash -c "echo 'ns1    IN  A    $SERVER_IP' >> /etc/bind/db.$(hostname)"
+    echo "Adding A record for ns1.$SERVER_IP..."
+    sudo bash -c "echo 'ns1    IN  A    $SERVER_IP' >> /etc/bind/db.$(hostname)"
 fi
 if [ -n "$SERVER_IPV6" ]; then
-  echo "Adding AAAA record for ns1.$SERVER_IPV6..."
-  sudo bash -c "echo 'ns1    IN  AAAA $SERVER_IPV6' >> /etc/bind/db.$(hostname)"
+    echo "Adding AAAA record for ns1.$SERVER_IPV6..."
+    sudo bash -c "echo 'ns1    IN  AAAA $SERVER_IPV6' >> /etc/bind/db.$(hostname)"
 fi
 
 # NS2 Records
 if [ -n "$SERVER_IP" ]; then
-  echo "Adding A record for ns2.$SERVER_IP..."
-  sudo bash -c "echo 'ns2    IN  A    $SERVER_IP' >> /etc/bind/db.$(hostname)"
+    echo "Adding A record for ns2.$SERVER_IP..."
+    sudo bash -c "echo 'ns2    IN  A    $SERVER_IP' >> /etc/bind/db.$(hostname)"
 fi
 if [ -n "$SERVER_IPV6" ]; then
-  echo "Adding AAAA record for ns2.$SERVER_IPV6..."
-  sudo bash -c "echo 'ns2    IN  AAAA $SERVER_IPV6' >> /etc/bind/db.$(hostname)"
+    echo "Adding AAAA record for ns2.$SERVER_IPV6..."
+    sudo bash -c "echo 'ns2    IN  AAAA $SERVER_IPV6' >> /etc/bind/db.$(hostname)"
 fi
 
 # TLD Records
 if [ -n "$SERVER_IP" ]; then
-  echo "Adding A record for $SERVER_IP..."
-  sudo bash -c "echo '@    IN  A    $SERVER_IP' >> /etc/bind/db.$(hostname)"
+    echo "Adding A record for $SERVER_IP..."
+    sudo bash -c "echo '@    IN  A    $SERVER_IP' >> /etc/bind/db.$(hostname)"
 fi
 if [ -n "$SERVER_IPV6" ]; then
-  echo "Adding AAAA record for $SERVER_IPV6..."
-  sudo bash -c "echo '@    IN  AAAA $SERVER_IPV6' >> /etc/bind/db.$(hostname)"
+    echo "Adding AAAA record for $SERVER_IPV6..."
+    sudo bash -c "echo '@    IN  AAAA $SERVER_IPV6' >> /etc/bind/db.$(hostname)"
 fi
 
 # WWW Records
