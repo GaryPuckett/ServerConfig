@@ -14,13 +14,13 @@ SERVER_IPV6=$(ip -6 route get 2001:4860:4860::8888 2>/dev/null | awk '{print $7;
 ## 0. Captive Portion
 echo "IPv4 address: $SERVER_IP"
 echo "IPv6 address: $SERVER_IPV6"
-echo "Hostname: $CURRENT_HOSTNAME"
+echo "Hostname: $(hostname)"
 
 read -p "Change Hostname? (leave blank to keep): " NEW_HOSTNAME
 if [[ -z "$NEW_HOSTNAME" ]]; then
   sudo hostnamectl set-hostname "$NEW_HOSTNAME"
   echo "127.0.0.1 $NEW_HOSTNAME" | sudo tee -a /etc/hosts
-  echo "Hostname updated to: $CURRENT_HOSTNAME"
+  echo "Hostname updated to: $(hostname)"
 fi
 
 ## 1. Install Docker and Docker Compose
@@ -132,65 +132,65 @@ echo "Installing BIND9..."
 sudo apt update && sudo apt install -y bind9 bind9-utils bind9-dnsutils
 
 # Configure the DNS Zone
-echo "Setting up BIND zone for $CURRENT_HOSTNAME..."
+echo "Setting up BIND zone for $(hostname)..."
 sudo bash -c "cat > /etc/bind/named.conf.local" <<EOF
-zone "$CURRENT_HOSTNAME" {
+zone "$(hostname)" {
     type master;
-    file "/etc/bind/db.$CURRENT_HOSTNAME";
+    file "/etc/bind/db.$(hostname)";
 };
 EOF
 
-echo "Creating zone file for $CURRENT_HOSTNAME..."
+echo "Creating zone file for $(hostname)..."
 # Create the zone file
-sudo bash -c "cat > /etc/bind/db.$CURRENT_HOSTNAME" <<EOF
+sudo bash -c "cat > /etc/bind/db.$(hostname)" <<EOF
 \$TTL 86400
-@    IN  SOA  ns1.$CURRENT_HOSTNAME. admin.$CURRENT_HOSTNAME. (
+@    IN  SOA  ns1.$(hostname). admin.$(hostname). (
           $(date +%Y%m%d)01  ; Serial
           3600        ; Refresh
           1800        ; Retry
           604800      ; Expire
           86400       ; Minimum TTL
 )
-@    IN  NS   ns1.$CURRENT_HOSTNAME.
-@    IN  NS   ns2.$CURRENT_HOSTNAME.
+@    IN  NS   ns1.$(hostname).
+@    IN  NS   ns2.$(hostname).
 EOF
 
 # NS1 Records
 if [ -n "$SERVER_IP" ]; then
   echo "Adding A record for ns1.$SERVER_IP..."
-  sudo bash -c "echo 'ns1    IN  A    $SERVER_IP' >> /etc/bind/db.$CURRENT_HOSTNAME"
+  sudo bash -c "echo 'ns1    IN  A    $SERVER_IP' >> /etc/bind/db.$(hostname)"
 fi
 if [ -n "$SERVER_IPV6" ]; then
   echo "Adding AAAA record for ns1.$SERVER_IPV6..."
-  sudo bash -c "echo 'ns1    IN  AAAA $SERVER_IPV6' >> /etc/bind/db.$CURRENT_HOSTNAME"
+  sudo bash -c "echo 'ns1    IN  AAAA $SERVER_IPV6' >> /etc/bind/db.$(hostname)"
 fi
 
 # NS2 Records
 if [ -n "$SERVER_IP" ]; then
   echo "Adding A record for ns2.$SERVER_IP..."
-  sudo bash -c "echo 'ns2    IN  A    $SERVER_IP' >> /etc/bind/db.$CURRENT_HOSTNAME"
+  sudo bash -c "echo 'ns2    IN  A    $SERVER_IP' >> /etc/bind/db.$(hostname)"
 fi
 if [ -n "$SERVER_IPV6" ]; then
   echo "Adding AAAA record for ns2.$SERVER_IPV6..."
-  sudo bash -c "echo 'ns2    IN  AAAA $SERVER_IPV6' >> /etc/bind/db.$CURRENT_HOSTNAME"
+  sudo bash -c "echo 'ns2    IN  AAAA $SERVER_IPV6' >> /etc/bind/db.$(hostname)"
 fi
 
 # TLD Records
 if [ -n "$SERVER_IP" ]; then
   echo "Adding A record for $SERVER_IP..."
-  sudo bash -c "echo '@    IN  A    $SERVER_IP' >> /etc/bind/db.$CURRENT_HOSTNAME"
+  sudo bash -c "echo '@    IN  A    $SERVER_IP' >> /etc/bind/db.$(hostname)"
 fi
 if [ -n "$SERVER_IPV6" ]; then
   echo "Adding AAAA record for $SERVER_IPV6..."
-  sudo bash -c "echo '@    IN  AAAA $SERVER_IPV6' >> /etc/bind/db.$CURRENT_HOSTNAME"
+  sudo bash -c "echo '@    IN  AAAA $SERVER_IPV6' >> /etc/bind/db.$(hostname)"
 fi
 
 # WWW Records
 #if [ -n "$SERVER_IP" ]; then
-#  sudo bash -c "echo 'www  IN  A    $SERVER_IP' >> /etc/bind/db.$CURRENT_HOSTNAME"
+#  sudo bash -c "echo 'www  IN  A    $SERVER_IP' >> /etc/bind/db.$(hostname)"
 #fi
 #if [ -n "$SERVER_IPV6" ]; then
-#  sudo bash -c "echo 'www  IN  AAAA $SERVER_IPV6' >> /etc/bind/db.$CURRENT_HOSTNAME"
+#  sudo bash -c "echo 'www  IN  AAAA $SERVER_IPV6' >> /etc/bind/db.$(hostname)"
 #fi
 
 # Restart BIND to apply changes
