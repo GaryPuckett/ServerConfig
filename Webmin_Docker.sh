@@ -1,8 +1,21 @@
 #!/bin/bash
-set -e
 
 ## SSH Oneliner
 #  curl -fsSL https://raw.githubusercontent.com/GaryPuckett/Hypercuube_Scripts/main/Webmin_Docker.sh | sudo bash
+
+## ERROR Handling
+
+error_handler() {
+  echo "An error occurred on line $1: $2"
+  read -p "Do you want to continue? (y/n): " CHOICE
+  if [[ "$CHOICE" != "y" ]]; then
+    echo "Exiting script."
+    exit 1
+  fi
+}
+
+# Set trap to catch errors
+trap 'error_handler $LINENO "$BASH_COMMAND"' ERR
 
 # Get the main network interface IP
 SERVER_IP=$(ip -4 route get 1.1.1.1 | awk '{print $7; exit}')
@@ -14,7 +27,6 @@ echo "IPv6 address: $SERVER_IPV6"
 echo "Hostname: $(hostname)"
 
 read -rp "Change Hostname? (leave blank to keep): " NEW_HOSTNAME
-
 if [[ -n "$NEW_HOSTNAME" ]]; then
   sudo hostnamectl set-hostname "$NEW_HOSTNAME"
   echo "127.0.0.1 $NEW_HOSTNAME" | sudo tee -a /etc/hosts
