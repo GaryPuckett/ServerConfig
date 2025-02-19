@@ -4,9 +4,6 @@ set -e
 ## SSH Oneliner
 #  curl -fsSL https://raw.githubusercontent.com/GaryPuckett/Hypercuube_Scripts/main/Webmin_Docker.sh | sudo bash
 
-## Error Catch
-
-
 # Get the main network interface IP
 SERVER_IP=$(ip -4 route get 1.1.1.1 | awk '{print $7; exit}')
 SERVER_IPV6=$(ip -6 route get 2001:4860:4860::8888 2>/dev/null | awk '{print $7; exit}')
@@ -16,7 +13,7 @@ echo "IPv4 address: $SERVER_IP"
 echo "IPv6 address: $SERVER_IPV6"
 echo "Hostname: $(hostname)"
 
-read -p "Change Hostname? (leave blank to keep): " NEW_HOSTNAME
+read -rp "Change Hostname? (leave blank to keep): " NEW_HOSTNAME
 
 if [[ -n "$NEW_HOSTNAME" ]]; then
   sudo hostnamectl set-hostname "$NEW_HOSTNAME"
