@@ -13,7 +13,7 @@ echo "IPv4 address: $SERVER_IP"
 echo "IPv6 address: $SERVER_IPV6"
 echo "Hostname: $(hostname)"
 
-read -rp "Change Hostname? (leave blank to keep): " NEW_HOSTNAME < /dev/tty
+read -rp "Change Hostname? (leave blank to keep): " NEW_HOSTNAME
 
 if [[ -n "$NEW_HOSTNAME" ]]; then
   sudo hostnamectl set-hostname "$NEW_HOSTNAME"
