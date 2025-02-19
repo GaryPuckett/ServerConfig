@@ -4,18 +4,24 @@ set -e
 ## SSH Oneliner
 #  curl -fsSL https://raw.githubusercontent.com/GaryPuckett/Hypercuube_Scripts/main/Webmin_Docker.sh | sudo bash
 
+## Error Catch
+
+
 # Get the main network interface IP
 SERVER_IP=$(ip -4 route get 1.1.1.1 | awk '{print $7; exit}')
 SERVER_IPV6=$(ip -6 route get 2001:4860:4860::8888 2>/dev/null | awk '{print $7; exit}')
-DOMAIN="hypercuube.net"
 
-## 0. Set hostname before continuing
-echo "Setting hostname to hypercuube.net..."
-sudo hostnamectl set-hostname $DOMAIN
-echo "127.0.0.1 $DOMAIN" | sudo tee -a /etc/hosts
+## 0. Captive Portion
+echo "IPv4 address: $SERVER_IP"
+echo "IPv6 address: $SERVER_IPV6"
+echo "Hostname: $CURRENT_HOSTNAME"
 
-# Verify the change
-echo "Hostname is now: $(hostname)"
+read -p "Change Hostname? (leave blank to keep): " NEW_HOSTNAME
+if [[ -z "$NEW_HOSTNAME" ]]; then
+  sudo hostnamectl set-hostname "$NEW_HOSTNAME"
+  echo "127.0.0.1 $NEW_HOSTNAME" | sudo tee -a /etc/hosts
+  echo "Hostname updated to: $CURRENT_HOSTNAME"
+fi
 
 ## 1. Install Docker and Docker Compose
 echo "Updating package index..."
@@ -61,43 +67,131 @@ wget -O docker.wbm.gz https://github.com/dave-lang/webmin-docker/releases/latest
 gunzip -f docker.wbm.gz
 sudo /usr/share/webmin/install-module.pl docker.wbm
 
-## 4. Install and Configure Bind9
+## 4. Install Fail2Ban & PAM
+echo "Installing fail2ban & PAM..."
+sudo apt-get update
+sudo apt-get install -y libpam-google-authenticator fail2ban
+
+# Enable PAM authentication in Webmin
+echo "Configuring Webmin to use PAM authentication..."
+sudo sed -i 's/^passwd_mode=.*/passwd_mode=2/' /etc/webmin/miniserv.conf
+sudo sed -i 's/^pam=.*$/pam=1/' /etc/webmin/miniserv.conf
+
+echo "Restarting Webmin..."
+sudo systemctl restart webmin
+
+# Add Webmin filter
+echo "Setting up Fail2Ban for Webmin..."
+sudo bash -c "cat > /etc/fail2ban/filter.d/webmin.conf" <<EOF
+[Definition]
+failregex = ^.*Failed login .* from <HOST>$
+ignoreregex =
+EOF
+
+# Config for SSH
+echo "Creating a basic fail2ban configuration..."
+sudo bash -c "cat > /etc/fail2ban/jail.local" <<EOF
+[DEFAULT]
+# IPs to ignore (localhost)
+ignoreip = 127.0.0.1/8
+# Ban time in seconds (1 hour)
+bantime  = 3600
+# Time window for maxretry
+findtime = 600
+# Maximum number of failures before banning
+maxretry = 3
+
+[sshd]
+enabled  = true
+port     = ssh
+filter   = sshd
+logpath  = /var/log/auth.log
+maxretry = 3
+EOF
+
+# Configure for PAM
+sudo bash -c "cat > /etc/fail2ban/jail.local" <<EOF
+
+[webmin]
+enabled = true
+port = 10000
+filter = webmin
+logpath = /var/log/auth.log
+maxretry = 3
+bantime = 3600
+EOF
+
+echo "Restarting and enabling Fail2Ban..."
+sudo systemctl restart fail2ban
+sudo systemctl enable fail2ban
+echo "Fail2Ban & PAM setup complete!"
+
+## 5. Install and Configure Bind9
 # Install BIND9 if not installed
 echo "Installing BIND9..."
 sudo apt update && sudo apt install -y bind9 bind9-utils bind9-dnsutils
 
 # Configure the DNS Zone
-echo "Setting up BIND zone for $DOMAIN..."
+echo "Setting up BIND zone for $CURRENT_HOSTNAME..."
 sudo bash -c "cat > /etc/bind/named.conf.local" <<EOF
-zone "$DOMAIN" {
+zone "$CURRENT_HOSTNAME" {
     type master;
-    file "/etc/bind/db.$DOMAIN";
+    file "/etc/bind/db.$CURRENT_HOSTNAME";
 };
 EOF
 
-echo "Creating zone file for $DOMAIN..."
-# Create the zone file with both A and AAAA records.
-sudo bash -c "cat > /etc/bind/db.$DOMAIN" <<EOF
+echo "Creating zone file for $CURRENT_HOSTNAME..."
+# Create the zone file
+sudo bash -c "cat > /etc/bind/db.$CURRENT_HOSTNAME" <<EOF
 \$TTL 86400
-@    IN  SOA  ns1.$DOMAIN. ns2.$DOMAIN. (
+@    IN  SOA  ns1.$CURRENT_HOSTNAME. admin.$CURRENT_HOSTNAME. (
           $(date +%Y%m%d)01  ; Serial
           3600        ; Refresh
           1800        ; Retry
           604800      ; Expire
           86400       ; Minimum TTL
 )
-     IN  NS   ns.$DOMAIN.
-
-; IPv4 address record
-@    IN  A    $SERVER_IP
-
-; IPv6 address record
-@    IN  AAAA $SERVER_IPV6
-
-; www subdomain records
-www  IN  A    $SERVER_IP
-www  IN  AAAA $SERVER_IPV6
+@    IN  NS   ns1.$CURRENT_HOSTNAME.
+@    IN  NS   ns2.$CURRENT_HOSTNAME.
 EOF
+
+# NS1 Records
+if [ -n "$SERVER_IP" ]; then
+  echo "Adding A record for ns1.$SERVER_IP..."
+  sudo bash -c "echo 'ns1    IN  A    $SERVER_IP' >> /etc/bind/db.$CURRENT_HOSTNAME"
+fi
+if [ -n "$SERVER_IPV6" ]; then
+  echo "Adding AAAA record for ns1.$SERVER_IPV6..."
+  sudo bash -c "echo 'ns1    IN  AAAA $SERVER_IPV6' >> /etc/bind/db.$CURRENT_HOSTNAME"
+fi
+
+# NS2 Records
+if [ -n "$SERVER_IP" ]; then
+  echo "Adding A record for ns2.$SERVER_IP..."
+  sudo bash -c "echo 'ns2    IN  A    $SERVER_IP' >> /etc/bind/db.$CURRENT_HOSTNAME"
+fi
+if [ -n "$SERVER_IPV6" ]; then
+  echo "Adding AAAA record for ns2.$SERVER_IPV6..."
+  sudo bash -c "echo 'ns2    IN  AAAA $SERVER_IPV6' >> /etc/bind/db.$CURRENT_HOSTNAME"
+fi
+
+# TLD Records
+if [ -n "$SERVER_IP" ]; then
+  echo "Adding A record for $SERVER_IP..."
+  sudo bash -c "echo '@    IN  A    $SERVER_IP' >> /etc/bind/db.$CURRENT_HOSTNAME"
+fi
+if [ -n "$SERVER_IPV6" ]; then
+  echo "Adding AAAA record for $SERVER_IPV6..."
+  sudo bash -c "echo '@    IN  AAAA $SERVER_IPV6' >> /etc/bind/db.$CURRENT_HOSTNAME"
+fi
+
+# WWW Records
+#if [ -n "$SERVER_IP" ]; then
+#  sudo bash -c "echo 'www  IN  A    $SERVER_IP' >> /etc/bind/db.$CURRENT_HOSTNAME"
+#fi
+#if [ -n "$SERVER_IPV6" ]; then
+#  sudo bash -c "echo 'www  IN  AAAA $SERVER_IPV6' >> /etc/bind/db.$CURRENT_HOSTNAME"
+#fi
 
 # Restart BIND to apply changes
 echo "Restarting BIND9..."
