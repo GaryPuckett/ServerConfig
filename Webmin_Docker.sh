@@ -26,7 +26,7 @@ echo "IPv4 address: $SERVER_IP"
 echo "IPv6 address: $SERVER_IPV6"
 echo "Hostname: $(hostname)"
 
-read -rp "Change Hostname? (leave blank to keep): " NEW_HOSTNAME
+read -rp "Change Hostname? (leave blank to keep): " NEW_HOSTNAME < /dev/tty
 if [[ -n "$NEW_HOSTNAME" ]]; then
   sudo hostnamectl set-hostname "$NEW_HOSTNAME"
   echo "127.0.0.1 $NEW_HOSTNAME" | sudo tee -a /etc/hosts
