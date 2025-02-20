@@ -37,6 +37,7 @@ fi
 ## 1. Install Docker and Docker Compose
 echo "Updating package index..."
 sudo apt-get update
+sudo apt-get upgrade
 
 echo "Installing prerequisites for Docker..."
 sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common gnupg lsb-release
