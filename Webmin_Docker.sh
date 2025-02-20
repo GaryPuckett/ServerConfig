@@ -22,7 +22,7 @@ SERVER_IP=$(ip -4 route get 1.1.1.1 | awk '{print $7; exit}')
 SERVER_IPV6=$(ip -6 route get 2001:4860:4860::8888 2>/dev/null | awk '{print $7; exit}')
 
 ## 0. Captive Portion
-echo "Webmin Docker v1.11"
+echo "Webmin Docker v1.12"
 echo "IPv4 address: $SERVER_IP"
 echo "IPv6 address: $SERVER_IPV6"
 echo "Hostname: $(hostname)"
@@ -193,7 +193,6 @@ sudo ip6tables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 sudo ip6tables -A INPUT -p tcp --dport 22 -j ACCEPT
 sudo ip6tables -A INPUT -p tcp --dport 10000 -j ACCEPT
 sudo ip6tables -P INPUT DROP
-sudo systemctl restart webmin
 
 # Restart BIND to apply changes
 echo "Restarting BIND9..."
@@ -208,9 +207,8 @@ sudo apt autoclean -y
 sudo systemctl restart webmin
 
 ## Fin
-
-echo "Installation complete!"
 echo "-------------------------------------------------"
+echo "Installation complete!"
 echo "Hostname is: $(hostname)"
 echo "Webmin is available at: https://$SERVER_IP:10000"
-echo "You may need to log out and log back in for group changes to take effect."
+echo "Set GLUE records to: $SERVER_IP and $SERVER_IPV6"
