@@ -6,7 +6,7 @@
 ## ERROR Handling
 error_handler() {
   echo "An error occurred on line $1: $2"
-  read -p "Do you want to continue? (y/n): " CHOICE
+  read -rp "Do you want to continue? (y/n): " CHOICE < /dev/tty
   if [[ "$CHOICE" != "y" ]]; then
     echo "Exiting script."
     exit 1
@@ -19,7 +19,7 @@ SERVER_IP=$(ip -4 route get 1.1.1.1 | awk '{print $7; exit}')
 SERVER_IPV6=$(ip -6 route get 2001:4860:4860::8888 2>/dev/null | awk '{print $7; exit}')
 
 ## 0. Captive Portion
-echo "Webmin Docker v1.13"
+echo "Webmin Docker v1.14"
 echo "IPv4 address: $SERVER_IP"
 echo "IPv6 address: $SERVER_IPV6"
 echo "Hostname: $(hostname)"
@@ -33,8 +33,12 @@ fi
 
 ## 1. Install Docker and Docker Compose
 echo "Updating package index..."
-sudo apt-get update
-sudo apt-get upgrade
+sudo apt-get -y update
+sudo apt-get -y upgrade
+
+# Clear Firewall rules
+sudo iptables -F
+sudo ip6tables -F
 
 echo "Installing prerequisites for Docker..."
 sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common gnupg lsb-release
@@ -48,7 +52,7 @@ https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | \
 sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
 echo "Updating package index with Docker repo..."
-sudo apt-get update
+sudo apt-get -y update
 
 echo "Installing Docker Engine, CLI, containerd, and Docker Compose plugin..."
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
@@ -65,7 +69,7 @@ echo "Running Webmin repository setup script..."
 sudo sh webmin-setup-repos.sh -f
 
 echo "Updating package index..."
-sudo apt-get update
+sudo apt-get -y update
 
 echo "Installing Webmin..."
 sudo apt-get install -y webmin --install-recommends
@@ -78,7 +82,7 @@ sudo /usr/share/webmin/install-module.pl docker.wbm
 
 ## 4. Install Fail2Ban & PAM
 echo "Installing fail2ban & PAM..."
-sudo apt-get update
+sudo apt-get -y update
 sudo apt-get install -y libpam-google-authenticator fail2ban
 
 # Enable PAM authentication in Webmin
@@ -180,6 +184,8 @@ fi
 echo "Setting up IPv4 firewall"
 sudo iptables -A INPUT -i lo -j ACCEPT
 sudo iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+sudo iptables -A INPUT -p udp --sport 53 -j ACCEPT
+sudo iptables -A INPUT -p tcp --sport 53 -j ACCEPT
 sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT
 sudo iptables -A INPUT -p tcp --dport 10000 -j ACCEPT
 sudo iptables -P INPUT DROP
@@ -187,6 +193,8 @@ sudo iptables -P INPUT DROP
 echo "Setting up IPv6 firewall"
 sudo ip6tables -A INPUT -i lo -j ACCEPT
 sudo ip6tables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+sudo ip6tables -A INPUT -p udp --sport 53 -j ACCEPT
+sudo ip6tables -A INPUT -p tcp --sport 53 -j ACCEPT
 sudo ip6tables -A INPUT -p tcp --dport 22 -j ACCEPT
 sudo ip6tables -A INPUT -p tcp --dport 10000 -j ACCEPT
 sudo ip6tables -P INPUT DROP
