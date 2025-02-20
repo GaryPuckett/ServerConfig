@@ -22,7 +22,7 @@ SERVER_IP=$(ip -4 route get 1.1.1.1 | awk '{print $7; exit}')
 SERVER_IPV6=$(ip -6 route get 2001:4860:4860::8888 2>/dev/null | awk '{print $7; exit}')
 
 ## 0. Captive Portion
-echo "Webmin Docker v1.0"
+echo "Webmin Docker v1.1"
 echo "IPv4 address: $SERVER_IP"
 echo "IPv6 address: $SERVER_IPV6"
 echo "Hostname: $(hostname)"
@@ -179,11 +179,20 @@ fi
 #fi
 
 ## 5. Add Firewall Rules
+# IPv4
+echo "Setting up IPv4 firewall"
 sudo iptables -A INPUT -i lo -j ACCEPT
 sudo iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT
 sudo iptables -A INPUT -p tcp --dport 10000 -j ACCEPT
 sudo iptables -P INPUT DROP
+# IPv6
+echo "Setting up IPv6 firewall"
+sudo ip6tables -A INPUT -i lo -j ACCEPT
+sudo ip6tables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+sudo ip6tables -A INPUT -p tcp --dport 22 -j ACCEPT
+sudo ip6tables -A INPUT -p tcp --dport 10000 -j ACCEPT
+sudo ip6tables -P INPUT DROP
 sudo systemctl restart webmin
 
 # Restart BIND to apply changes
