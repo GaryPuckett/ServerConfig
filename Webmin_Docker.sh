@@ -4,7 +4,6 @@
 #  curl -fsSL https://raw.githubusercontent.com/GaryPuckett/Hypercuube_Scripts/main/Webmin_Docker.sh | sudo bash
 
 ## ERROR Handling
-
 error_handler() {
   echo "An error occurred on line $1: $2"
   read -p "Do you want to continue? (y/n): " CHOICE
@@ -13,8 +12,6 @@ error_handler() {
     exit 1
   fi
 }
-
-# Set trap to catch errors
 trap 'error_handler $LINENO "$BASH_COMMAND"' ERR
 
 # Get the main network interface IP
