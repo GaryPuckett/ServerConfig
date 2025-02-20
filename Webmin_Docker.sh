@@ -90,45 +90,18 @@ sudo sed -i 's/^pam=.*$/pam=1/' /etc/webmin/miniserv.conf
 echo "Restarting Webmin..."
 sudo systemctl restart webmin
 
-# Add Webmin filter
-echo "Setting up Fail2Ban for Webmin..."
-sudo bash -c "cat > /etc/fail2ban/filter.d/webmin.conf" <<EOF
-[Definition]
-failregex = ^.*Failed login .* from <HOST>$
-ignoreregex =
-EOF
-
-# Config for SSH
+# Config jails for SSH and Webmin-auth
 echo "Creating a basic fail2ban configuration..."
 sudo bash -c "cat > /etc/fail2ban/jail.local" <<EOF
-[DEFAULT]
-# IPs to ignore (localhost)
-ignoreip = 127.0.0.1/8
-# Ban time in seconds (1 hour)
-bantime  = 3600
-# Time window for maxretry
-findtime = 600
-# Maximum number of failures before banning
-maxretry = 3
-
 [sshd]
-enabled  = true
-port     = ssh
-filter   = sshd
-logpath  = /var/log/auth.log
-maxretry = 3
-EOF
-
-# Configure for PAM
-sudo bash -c "cat > /etc/fail2ban/jail.local" <<EOF
-
-[webmin]
 enabled = true
-port = 10000
-filter = webmin
-logpath = /var/log/auth.log
 maxretry = 3
-bantime = 3600
+findtime = 15m
+bantime = 20m
+
+[webmin-auth]
+enabled = true
+journalmatch = _SYSTEMD_UNIT=webmin.service
 EOF
 
 echo "Restarting and enabling Fail2Ban..."
@@ -202,6 +175,14 @@ fi
 #if [ -n "$SERVER_IPV6" ]; then
 #  sudo bash -c "echo 'www  IN  AAAA $SERVER_IPV6' >> /etc/bind/db.$(hostname)"
 #fi
+
+## 5. Add Firewall Rules
+sudo iptables -A INPUT -i lo -j ACCEPT
+sudo iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 10000 -j ACCEPT
+sudo iptables -P INPUT DROP
+sudo systemctl restart webmin
 
 # Restart BIND to apply changes
 echo "Restarting BIND9..."
