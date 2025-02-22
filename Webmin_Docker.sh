@@ -19,7 +19,7 @@ SERVER_IP=$(ip -4 route get 1.1.1.1 | awk '{print $7; exit}')
 SERVER_IPV6=$(ip -6 route get 2001:4860:4860::8888 2>/dev/null | awk '{print $7; exit}')
 
 ## 0. Captive Portion
-echo "Webmin Docker v1.15"
+echo "Webmin Docker v1.16"
 echo "IPv4 address: $SERVER_IP"
 echo "IPv6 address: $SERVER_IPV6"
 echo "Hostname: $(hostname)"
@@ -204,7 +204,16 @@ echo "Restarting BIND9..."
 sudo systemctl restart named
 sudo systemctl enable named
 
-## 5. Update & Restart Webmin to apply changes
+## 5. Install Perl WebminAPI
+wget https://www.webmin.com/Webmin-API-1.0.tar.gz
+tar xvzf Webmin-API-1.0.tar.gz
+cd Webmin-API
+perl Makefile.PL
+make install
+cd ..
+rm -rf Webmin-API-1.0.tar.gz Webmin-API
+
+## 6. Update & Restart Webmin to apply changes
 sudo apt update
 sudo apt full-upgrade -y
 sudo apt autoremove -y
