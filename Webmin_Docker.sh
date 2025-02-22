@@ -207,11 +207,11 @@ sudo systemctl enable named
 ## 5. Install Perl WebminAPI
 wget https://www.webmin.com/Webmin-API-1.0.tar.gz
 tar xvzf Webmin-API-1.0.tar.gz
-cd Webmin-API
+cd Webmin-API-1.0
 perl Makefile.PL
 make install
 cd ..
-rm -rf Webmin-API-1.0.tar.gz Webmin-API
+rm -rf Webmin-API-1.0.tar.gz Webmin-API-1.0
 
 ## 6. Update & Restart Webmin to apply changes
 sudo apt update
