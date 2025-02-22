@@ -209,7 +209,8 @@ wget https://www.webmin.com/Webmin-API-1.0.tar.gz
 tar xvzf Webmin-API-1.0.tar.gz
 cd Webmin-API-1.0
 perl Makefile.PL
-make install
+sudo apt install make
+sudo make install
 cd ..
 rm -rf Webmin-API-1.0.tar.gz Webmin-API-1.0
 
