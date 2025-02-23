@@ -33,7 +33,7 @@ fi
 
 ## 1. Install Docker and Docker Compose
 echo "Updating package index..."
-sudo apt-get -y update
+sudo apt-get update
 sudo apt-get -y upgrade
 
 # Clear Firewall rules
