@@ -26,12 +26,19 @@ error_handler() {
 }
 trap 'error_handler $LINENO "$BASH_COMMAND"' ERR
 
+# Check if running as root; if not, re‑exec with sudo
+if [[ $EUID -ne 0 ]]; then
+  echo "Not running as root; re‑executing with sudo..."
+  exec sudo bash "$0" "$@"
+fi
+
+
 # Get the main network interface IP
 SERVER_IP=$(ip -4 route get 1.1.1.1 | awk '{print $7; exit}')
 SERVER_IPV6=$(ip -6 route get 2001:4860:4860::8888 2>/dev/null | awk '{print $7; exit}')
 
 ## 0. Captive Portion
-echo "Webmin Docker v1.19"
+echo "Webmin Docker v1.20"
 echo "IPv4 address: $SERVER_IP"
 echo "IPv6 address: $SERVER_IPV6"
 echo "Hostname: $(hostname)"
@@ -73,7 +80,7 @@ USERNAME="dockerusr"
 GROUPNAME="dockergrp"
 
 # Create or overwrite the daemon.json with userns-remap setting
-sudo cat > "$DAEMON_CONFIG" <<EOF
+sudo tee > "/etc/docker/daemon.json" <<EOF
 {
   "userns-remap": "default"
 }
