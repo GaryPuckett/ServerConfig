@@ -59,6 +59,26 @@ sudo apt-get -y upgrade
 sudo iptables -F
 sudo ip6tables -F
 
+## Add Firewall Rules
+# IPv4
+echo "Setting up IPv4 firewall"
+sudo iptables -A INPUT -i lo -j ACCEPT
+sudo iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+sudo iptables -A INPUT -p udp --dport 53 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 53 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 10000 -j ACCEPT
+sudo iptables -P INPUT DROP
+# IPv6
+echo "Setting up IPv6 firewall"
+sudo ip6tables -A INPUT -i lo -j ACCEPT
+sudo ip6tables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+sudo ip6tables -A INPUT -p udp --dport 53 -j ACCEPT
+sudo ip6tables -A INPUT -p tcp --dport 53 -j ACCEPT
+sudo ip6tables -A INPUT -p tcp --dport 22 -j ACCEPT
+sudo ip6tables -A INPUT -p tcp --dport 10000 -j ACCEPT
+sudo ip6tables -P INPUT DROP
+
 echo "Installing prerequisites for Docker..."
 sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common gnupg lsb-release
 
@@ -76,17 +96,6 @@ sudo apt-get -y update
 echo "Installing Docker Engine, CLI, containerd, and Docker Compose plugin..."
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
-USERNAME="dockerusr"
-GROUPNAME="dockergrp"
-
-# Create or overwrite the daemon.json with userns-remap setting
-sudo tee > "/etc/docker/daemon.json" <<EOF
-{
-  "userns-remap": "default"
-}
-EOF
-echo "User Namespace Remapping enabled."
-
 # Restrict Docker Socket Access
 echo "Restricting Docker Socket Access..."
 sudo chown root:docker /var/run/docker.sock
@@ -98,7 +107,7 @@ echo "Restarting Docker Service..."
 systemctl restart docker
 echo "Docker Service restarted."
 
-## 2. Install Webmin
+## Install Webmin
 echo "Downloading Webmin repository setup script..."
 curl -o webmin-setup-repos.sh https://raw.githubusercontent.com/webmin/webmin/master/webmin-setup-repos.sh
 
@@ -111,13 +120,13 @@ sudo apt-get -y update
 echo "Installing Webmin..."
 sudo apt-get install -y webmin --install-recommends
 
-## 3. Install Docker Webmin Module
+## Install Docker Webmin Module
 echo "Installing the Docker Webmin module..."
 wget -O docker.wbm.gz https://github.com/dave-lang/webmin-docker/releases/latest/download/docker.wbm.gz
 gunzip -f docker.wbm.gz
 sudo /usr/share/webmin/install-module.pl docker.wbm
 
-## 4. Install Fail2Ban & PAM
+## Install Fail2Ban & PAM
 echo "Installing fail2ban & PAM..."
 sudo apt-get -y update
 sudo apt-get install -y libpam-google-authenticator fail2ban
@@ -149,7 +158,7 @@ sudo systemctl restart fail2ban
 sudo systemctl enable fail2ban
 echo "Fail2Ban & PAM setup complete!"
 
-## 5. Install and Configure Bind9
+## Install and Configure Bind9
 # Install BIND9 if not installed
 echo "Installing BIND9..."
 sudo apt update && sudo apt install -y bind9 bind9-utils bind9-dnsutils
@@ -215,26 +224,6 @@ fi
 #if [ -n "$SERVER_IPV6" ]; then
 #  sudo bash -c "echo 'www  IN  AAAA $SERVER_IPV6' >> /etc/bind/db.$(hostname)"
 #fi
-
-## 5. Add Firewall Rules
-# IPv4
-echo "Setting up IPv4 firewall"
-sudo iptables -A INPUT -i lo -j ACCEPT
-sudo iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-sudo iptables -A INPUT -p udp --dport 53 -j ACCEPT
-sudo iptables -A INPUT -p tcp --dport 53 -j ACCEPT
-sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT
-sudo iptables -A INPUT -p tcp --dport 10000 -j ACCEPT
-sudo iptables -P INPUT DROP
-# IPv6
-echo "Setting up IPv6 firewall"
-sudo ip6tables -A INPUT -i lo -j ACCEPT
-sudo ip6tables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-sudo ip6tables -A INPUT -p udp --dport 53 -j ACCEPT
-sudo ip6tables -A INPUT -p tcp --dport 53 -j ACCEPT
-sudo ip6tables -A INPUT -p tcp --dport 22 -j ACCEPT
-sudo ip6tables -A INPUT -p tcp --dport 10000 -j ACCEPT
-sudo ip6tables -P INPUT DROP
 
 # Restart BIND to apply changes
 echo "Restarting BIND9..."
