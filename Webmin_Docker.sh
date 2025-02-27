@@ -19,7 +19,7 @@ SERVER_IP=$(ip -4 route get 1.1.1.1 | awk '{print $7; exit}')
 SERVER_IPV6=$(ip -6 route get 2001:4860:4860::8888 2>/dev/null | awk '{print $7; exit}')
 
 ## 0. Captive Portion
-echo "Webmin Docker v1.18"
+echo "Webmin Docker v1.19"
 echo "IPv4 address: $SERVER_IP"
 echo "IPv6 address: $SERVER_IPV6"
 echo "Hostname: $(hostname)"
@@ -57,9 +57,27 @@ sudo apt-get -y update
 echo "Installing Docker Engine, CLI, containerd, and Docker Compose plugin..."
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
-# Add current user to docker group to run docker without sudo.
-echo "Adding current user ($USER) to docker group..."
-sudo usermod -aG docker $USER
+USERNAME="dockerusr"
+GROUPNAME="dockergrp"
+
+# Create or overwrite the daemon.json with userns-remap setting
+cat > "$DAEMON_CONFIG" <<EOF
+{
+  "userns-remap": "default"
+}
+EOF
+echo "User Namespace Remapping enabled."
+
+# Restrict Docker Socket Access
+echo "Restricting Docker Socket Access..."
+sudo chown root:docker /var/run/docker.sock
+sudo chmod 660 /var/run/docker.sock
+echo "Docker Socket permissions set to 660."
+
+# Restart Docker Service to Apply Changes
+echo "Restarting Docker Service..."
+systemctl restart docker
+echo "Docker Service restarted."
 
 ## 2. Install Webmin
 echo "Downloading Webmin repository setup script..."
