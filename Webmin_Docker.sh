@@ -3,7 +3,19 @@
 ## SSH Oneliner
 #  curl -fsSL https://raw.githubusercontent.com/GaryPuckett/Hypercuube_Scripts/main/Webmin_Docker.sh | sudo bash
 
-## ERROR Handling
+#  This script is meant to be ran on a fresh ubuntu installation to install:
+#  Docker + Compose,         | -Enables Namespace Mapping
+#  Webmin + Docker Module,   |
+#  Fail2Ban + PAM,           | -Configures Webmin Auth - Configures SSH & Webmin Jails
+#  Bind9                     | 
+#  
+#  This script sets up a docker ubuntu server with webmin to interface with it.
+#  Script reduces attack surface to PAM Authentication and
+#
+#  NOTE: Will reset iptables and ip6tables & Allow SSH, DNS, & Webmin through IPv4&6
+#
+
+## ERROR Handling Func
 error_handler() {
   echo "An error occurred on line $1: $2"
   read -rp "Do you want to continue? (y/n): " CHOICE < /dev/tty
@@ -61,7 +73,7 @@ USERNAME="dockerusr"
 GROUPNAME="dockergrp"
 
 # Create or overwrite the daemon.json with userns-remap setting
-cat > "$DAEMON_CONFIG" <<EOF
+sudo cat > "$DAEMON_CONFIG" <<EOF
 {
   "userns-remap": "default"
 }
