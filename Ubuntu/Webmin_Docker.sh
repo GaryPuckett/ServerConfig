@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ## SSH Oneliner
-#  curl -fsSL https://raw.githubusercontent.com/GaryPuckett/Hypercuube_Scripts/main/Webmin_Docker.sh | sudo bash
+#  curl -fsSL https://raw.githubusercontent.com/GaryPuckett/Hypercuube_Scripts/main/Ubuntu/Webmin_Docker.sh | sudo bash
 
 #  This script is meant to be ran on a fresh ubuntu installation to install:
 #  Docker + Compose,         | -Enables Namespace Mapping
@@ -38,7 +38,7 @@ SERVER_IP=$(ip -4 route get 1.1.1.1 | awk '{print $7; exit}')
 SERVER_IPV6=$(ip -6 route get 2001:4860:4860::8888 2>/dev/null | awk '{print $7; exit}')
 
 ## 0. Captive Portion
-echo "Webmin Docker v1.20"
+echo "Ubuntu Webmin Docker v1.20"
 echo "IPv4 address: $SERVER_IP"
 echo "IPv6 address: $SERVER_IPV6"
 echo "Hostname: $(hostname)"
@@ -50,14 +50,14 @@ if [[ -n "$NEW_HOSTNAME" ]]; then
   echo "Hostname updated to: $(hostname)"
 fi
 
+# Clear Firewall rules
+sudo iptables -F
+sudo ip6tables -F
+
 ## 1. Install Docker and Docker Compose
 echo "Updating package index..."
 sudo apt-get update
 sudo apt-get -y upgrade
-
-# Clear Firewall rules
-sudo iptables -F
-sudo ip6tables -F
 
 ## Add Firewall Rules
 # IPv4
@@ -239,6 +239,9 @@ sudo systemctl enable named
 #sudo make install
 #cd ..
 #rm -rf Webmin-API-1.0.tar.gz Webmin-API-1.0
+
+# Install Zip
+sudo apt-get install zip
 
 ## 6. Update & Restart Webmin to apply changes
 sudo apt update
