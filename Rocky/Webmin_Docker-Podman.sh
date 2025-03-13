@@ -40,7 +40,7 @@ SERVER_IPV6=$(ip -6 route get 2001:4860:4860::8888 2>/dev/null | awk '{print $7;
 
 
 ## 0. Introductory Output
-echo "Ubuntu Webmin Docker v1.10"
+echo "Ubuntu Webmin Docker v1.11"
 echo "IPv4 address: $SERVER_IP"
 echo "IPv6 address: $SERVER_IPV6"
 echo "Hostname: $(hostname)"
@@ -52,7 +52,7 @@ if [[ -n "$NEW_HOSTNAME" ]]; then
   echo "Hostname updated to: $(hostname)"
 fi
 
-
+dnf update ca-certificates -y
 
 ## 0.5 Rocky ajust current mirrorlist to official source for OSPP compatibility
 echo "Adjusting repository files for strong certificate keys..."
