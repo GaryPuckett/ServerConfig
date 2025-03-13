@@ -37,7 +37,7 @@ SERVER_IP=$(ip -4 route get 1.1.1.1 | awk '{print $7; exit}')
 SERVER_IPV6=$(ip -6 route get 2001:4860:4860::8888 2>/dev/null | awk '{print $7; exit}')
 
 ## 0. Introductory Output
-echo "Ubuntu Webmin Docker v1.02"
+echo "Ubuntu Webmin Docker v1.03"
 echo "IPv4 address: $SERVER_IP"
 echo "IPv6 address: $SERVER_IPV6"
 echo "Hostname: $(hostname)"
@@ -61,8 +61,6 @@ dnf upgrade -y
 # Determine the appropriate SCAP content file based on your OS version.
 if [ -f /usr/share/xml/scap/ssg/content/ssg-rl9-ds.xml ]; then
     SCAP_FILE="/usr/share/xml/scap/ssg/content/ssg-rl9-ds.xml"
-elif [ -f /usr/share/xml/scap/ssg/content/ssg-rl8-ds.xml ]; then
-    SCAP_FILE="/usr/share/xml/scap/ssg/content/ssg-rl8-ds.xml"
 else
     echo "Error: No valid SCAP content file found. Please install the scap-security-guide package."
     exit 1
@@ -77,7 +75,7 @@ fi
 echo "Using SCAP file: $SCAP_FILE"
 
 # Reapply the protected profile with remediation.
-sudo oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_protection --remediate "$SCAP_FILE"
+sudo oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_ospp --remediate "$SCAP_FILE"
 
 # Install OpenSCAP and the SCAP Security Guide
 echo "Installing OpenSCAP and SCAP Security Guide..."
