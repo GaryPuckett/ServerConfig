@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ## SSH Oneliner
-#  curl -fsSL https://raw.githubusercontent.com/GaryPuckett/Hypercuube_Scripts/main/Rocky/Webmin_Docker.sh | sudo bash
+#  curl -fsSL https://raw.githubusercontent.com/GaryPuckett/Hypercuube_Scripts/main/Rocky/Webmin_Docker.sh --insecure | sudo bash
 
 #  This script is meant to be ran on a fresh ubuntu installation to install:
 #  Docker + Compose,         | -Enables Namespace Mapping
@@ -37,7 +37,7 @@ SERVER_IP=$(ip -4 route get 1.1.1.1 | awk '{print $7; exit}')
 SERVER_IPV6=$(ip -6 route get 2001:4860:4860::8888 2>/dev/null | awk '{print $7; exit}')
 
 ## 0. Introductory Output
-echo "Ubuntu Webmin Docker v1.01"
+echo "Ubuntu Webmin Docker v1.02"
 echo "IPv4 address: $SERVER_IP"
 echo "IPv6 address: $SERVER_IPV6"
 echo "Hostname: $(hostname)"
@@ -49,10 +49,35 @@ if [[ -n "$NEW_HOSTNAME" ]]; then
   echo "Hostname updated to: $(hostname)"
 fi
 
+## 0.5 Rocky ajust current mirrorlist to official source for OSPP compatibility
+
+
+
 ## 1. Upgrade to 'Protected Profile' and Clear Firewall Rules
 echo "Updating package index and upgrading packages..."
 dnf update -y
 dnf upgrade -y
+
+# Determine the appropriate SCAP content file based on your OS version.
+if [ -f /usr/share/xml/scap/ssg/content/ssg-rl9-ds.xml ]; then
+    SCAP_FILE="/usr/share/xml/scap/ssg/content/ssg-rl9-ds.xml"
+elif [ -f /usr/share/xml/scap/ssg/content/ssg-rl8-ds.xml ]; then
+    SCAP_FILE="/usr/share/xml/scap/ssg/content/ssg-rl8-ds.xml"
+else
+    echo "Error: No valid SCAP content file found. Please install the scap-security-guide package."
+    exit 1
+fi
+
+# Ensure the scap-security-guide package is installed.
+if ! rpm -q scap-security-guide &>/dev/null; then
+    echo "scap-security-guide package is missing. Installing..."
+    sudo dnf install -y scap-security-guide || { echo "Installation failed. Exiting."; exit 1; }
+fi
+
+echo "Using SCAP file: $SCAP_FILE"
+
+# Reapply the protected profile with remediation.
+sudo oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_protection --remediate "$SCAP_FILE"
 
 # Install OpenSCAP and the SCAP Security Guide
 echo "Installing OpenSCAP and SCAP Security Guide..."
