@@ -52,8 +52,6 @@ if [[ -n "$NEW_HOSTNAME" ]]; then
   echo "Hostname updated to: $(hostname)"
 fi
 
-dnf update ca-certificates -y
-
 ## 0.5 Rocky ajust current mirrorlist to official source for OSPP compatibility
 echo "Adjusting repository files for strong certificate keys..."
 for repo in /etc/yum.repos.d/*.repo; do
@@ -149,6 +147,19 @@ ip6tables -P INPUT DROP
 
 
 ## 4. Install Webmin
+echo "Adding Webmin Repository..."
+cat > /etc/yum.repos.d/webmin.repo <<'EOF'
+[Webmin]
+name=Webmin Distribution Neutral
+baseurl=https://download.webmin.com/download/yum
+enabled=1
+gpgcheck=1
+gpgkey=https://download.webmin.com/jcameron-key.asc
+EOF
+
+dnf clean all
+dnf update -y
+
 echo "Downloading Webmin repository setup script..."
 curl -o webmin-setup-repos.sh https://raw.githubusercontent.com/webmin/webmin/master/webmin-setup-repos.sh --insecure
 
