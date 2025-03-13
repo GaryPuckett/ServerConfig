@@ -74,20 +74,26 @@ fi
 echo "Using SCAP file: $SCAP_FILE"
 
 # Workaround for the rule "Ensure Red Hat GPG Key Installed":
-# This rule expects a file named /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release.
-# On Rocky Linux, the GPG key is typically at /etc/pki/rpm-gpg/RPM-GPG-KEY-rocky.
-# Create a symlink if the expected file is missing.
+# This rule expects a file at /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release.
+# On Rocky Linux, the GPG key is provided at /etc/pki/rpm-gpg/RPM-GPG-KEY-rocky.
+# Instead of a symlink, copy the Rocky key to the expected location.
 REDHAT_KEY="/etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release"
 ROCKY_KEY="/etc/pki/rpm-gpg/RPM-GPG-KEY-rocky"
 
 if [ ! -f "$REDHAT_KEY" ]; then
     if [ -f "$ROCKY_KEY" ]; then
-        echo "Creating symlink: $REDHAT_KEY -> $ROCKY_KEY"
-        sudo ln -s "$ROCKY_KEY" "$REDHAT_KEY"
+        echo "Copying Rocky GPG key to $REDHAT_KEY"
+        sudo cp "$ROCKY_KEY" "$REDHAT_KEY"
+        if [ $? -ne 0 ]; then
+            echo "Error: Failed to copy the Rocky GPG key."
+            exit 1
+        fi
     else
         echo "Error: Rocky Linux GPG key not found at $ROCKY_KEY."
         exit 1
     fi
+else
+    echo "GPG key already exists at $REDHAT_KEY"
 fi
 
 # Reapply the protected profile with remediation.
