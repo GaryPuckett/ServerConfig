@@ -52,7 +52,6 @@ fi
 ## 0.5 Rocky ajust current mirrorlist to official source for OSPP compatibility
 
 
-
 ## 1. Upgrade to 'Protected Profile' and Clear Firewall Rules
 echo "Updating package index and upgrading packages..."
 dnf update -y
