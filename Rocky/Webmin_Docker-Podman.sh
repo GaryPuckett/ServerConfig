@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ## SSH Oneliner
-#  curl -fsSL https://raw.githubusercontent.com/GaryPuckett/Hypercuube_Scripts/main/Rocky/Webmin_Docker-Podman.sh --insecure | sudo bash
+#  curl -fsSL https://raw.githubusercontent.com/GaryPuckett/Hypercuube_Scripts/main/Rocky/Webmin_Docker-Podman.sh -k | sudo bash
 
 #  This script is meant to be ran on a fresh ubuntu installation to install:
 #  Docker + Compose,         | -Enables Namespace Mapping
@@ -40,7 +40,7 @@ SERVER_IPV6=$(ip -6 route get 2001:4860:4860::8888 2>/dev/null | awk '{print $7;
 
 
 ## 0. Introductory Output
-echo "Ubuntu Webmin Docker v1.12"
+echo "Ubuntu Webmin Docker v1.13"
 echo "IPv4 address: $SERVER_IP"
 echo "IPv6 address: $SERVER_IPV6"
 echo "Hostname: $(hostname)"
@@ -148,6 +148,9 @@ ip6tables -P INPUT DROP
 
 ## 4. Install Webmin
 echo "Adding Webmin Repository..."
+curl -k -o /tmp/jcameron-key.asc https://download.webmin.com/jcameron-key.asc
+rpm --import /tmp/jcameron-key.asc
+
 cat > /etc/yum.repos.d/webmin.repo <<'EOF'
 [Webmin]
 name=Webmin Distribution Neutral
@@ -155,16 +158,18 @@ baseurl=https://download.webmin.com/download/yum
 enabled=1
 gpgcheck=1
 gpgkey=https://download.webmin.com/jcameron-key.asc
+sslverify=1
 EOF
+
 
 dnf clean all
 dnf update -y
 
 echo "Downloading Webmin repository setup script..."
-curl -o webmin-setup-repos.sh https://raw.githubusercontent.com/webmin/webmin/master/webmin-setup-repos.sh --insecure
+curl -k -o webmin-setup-repos.sh https://raw.githubusercontent.com/webmin/webmin/master/webmin-setup-repos.sh
 
 echo "Running Webmin repository setup script..."
-sh webmin-setup-repos.sh -f
+sh webmin-setup-repos.sh
 
 echo "Updating package index for Webmin..."
 dnf update -y
@@ -176,7 +181,7 @@ dnf install webmin
 
 ## 5. Install Docker Webmin Module
 echo "Installing the Docker Webmin module..."
-wget -O docker.wbm.gz https://github.com/dave-lang/webmin-docker/releases/latest/download/docker.wbm.gz --insecure
+wget -k -O docker.wbm.gz https://github.com/dave-lang/webmin-docker/releases/latest/download/docker.wbm.gz
 gunzip -f docker.wbm.gz
 /usr/share/webmin/install-module.pl docker.wbm
 
