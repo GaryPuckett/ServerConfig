@@ -37,7 +37,7 @@ SERVER_IP=$(ip -4 route get 1.1.1.1 | awk '{print $7; exit}')
 SERVER_IPV6=$(ip -6 route get 2001:4860:4860::8888 2>/dev/null | awk '{print $7; exit}')
 
 ## 0. Introductory Output
-echo "Ubuntu Webmin Docker v1.06"
+echo "Ubuntu Webmin Docker v1.07"
 echo "IPv4 address: $SERVER_IP"
 echo "IPv6 address: $SERVER_IPV6"
 echo "Hostname: $(hostname)"
@@ -77,27 +77,24 @@ echo "Using SCAP file: $SCAP_FILE"
 # This rule expects a file at /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release.
 # On Rocky Linux, the GPG key is provided at /etc/pki/rpm-gpg/RPM-GPG-KEY-rocky.
 # Instead of a symlink, copy the Rocky key to the expected location.
-REDHAT_KEY="/etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release"
-ROCKY_KEY="/etc/pki/rpm-gpg/RPM-GPG-KEY-rocky"
+#REDHAT_KEY="/etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release"
+#ROCKY_KEY="/etc/pki/rpm-gpg/RPM-GPG-KEY-rocky"
 
-if [ ! -f "$REDHAT_KEY" ]; then
-    if [ -f "$ROCKY_KEY" ]; then
-        echo "Copying Rocky GPG key to $REDHAT_KEY"
-        sudo cp "$ROCKY_KEY" "$REDHAT_KEY"
-        if [ $? -ne 0 ]; then
-            echo "Error: Failed to copy the Rocky GPG key."
-            exit 1
-        fi
-    else
-        echo "Error: Rocky Linux GPG key not found at $ROCKY_KEY."
-        exit 1
-    fi
-else
-    echo "GPG key already exists at $REDHAT_KEY"
-fi
-
-# Reapply the protected profile with remediation.
-sudo oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_ospp --remediate $SCAP_FILE
+#if [ ! -f "$REDHAT_KEY" ]; then
+#    if [ -f "$ROCKY_KEY" ]; then
+#        echo "Copying Rocky GPG key to $REDHAT_KEY"
+#        sudo cp "$ROCKY_KEY" "$REDHAT_KEY"
+#        if [ $? -ne 0 ]; then
+#            echo "Error: Failed to copy the Rocky GPG key."
+#            exit 1
+#        fi
+#    else
+#        echo "Error: Rocky Linux GPG key not found at $ROCKY_KEY."
+#        exit 1
+#    fi
+#else
+#    echo "GPG key already exists at $REDHAT_KEY"
+#fi
 
 # Install OpenSCAP and the SCAP Security Guide
 echo "Installing OpenSCAP and SCAP Security Guide..."
@@ -105,7 +102,7 @@ dnf install -y openscap-scanner scap-security-guide
 
 # Apply the 'protected' security profile
 echo "Applying the 'protected' security profile..."
-oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_protection --remediate /usr/share/xml/scap/ssg/content/ssg-rl9-ds.xml
+oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_ospp --remediate $SCAP_FILE
 
 # Clear existing iptables rules (if you use them)
 iptables -F
