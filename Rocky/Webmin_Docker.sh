@@ -37,7 +37,7 @@ SERVER_IP=$(ip -4 route get 1.1.1.1 | awk '{print $7; exit}')
 SERVER_IPV6=$(ip -6 route get 2001:4860:4860::8888 2>/dev/null | awk '{print $7; exit}')
 
 ## 0. Introductory Output
-echo "Ubuntu Webmin Docker v1.05"
+echo "Ubuntu Webmin Docker v1.06"
 echo "IPv4 address: $SERVER_IP"
 echo "IPv6 address: $SERVER_IPV6"
 echo "Hostname: $(hostname)"
@@ -97,7 +97,7 @@ else
 fi
 
 # Reapply the protected profile with remediation.
-sudo oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_ospp --remediate "$SCAP_FILE"
+sudo oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_ospp --remediate $SCAP_FILE
 
 # Install OpenSCAP and the SCAP Security Guide
 echo "Installing OpenSCAP and SCAP Security Guide..."
@@ -105,7 +105,7 @@ dnf install -y openscap-scanner scap-security-guide
 
 # Apply the 'protected' security profile
 echo "Applying the 'protected' security profile..."
-oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_protection --remediate /usr/share/xml/scap/ssg/content/ssg-rl8-ds.xml
+oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_protection --remediate /usr/share/xml/scap/ssg/content/ssg-rl9-ds.xml
 
 # Clear existing iptables rules (if you use them)
 iptables -F
