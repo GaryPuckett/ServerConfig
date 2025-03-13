@@ -26,18 +26,21 @@ error_handler() {
 }
 trap 'error_handler $LINENO "$BASH_COMMAND"' ERR
 
+
 # Check if running as root; if not, re‑exec with sudo
 if [[ $EUID -ne 0 ]]; then
   echo "Not running as root; re‑executing with sudo..."
   exec sudo bash "$0" "$@"
 fi
 
+
 # Get the main network interface IP
 SERVER_IP=$(ip -4 route get 1.1.1.1 | awk '{print $7; exit}')
 SERVER_IPV6=$(ip -6 route get 2001:4860:4860::8888 2>/dev/null | awk '{print $7; exit}')
 
+
 ## 0. Introductory Output
-echo "Ubuntu Webmin Docker v1.07"
+echo "Ubuntu Webmin Docker v1.08"
 echo "IPv4 address: $SERVER_IP"
 echo "IPv6 address: $SERVER_IPV6"
 echo "Hostname: $(hostname)"
@@ -49,7 +52,37 @@ if [[ -n "$NEW_HOSTNAME" ]]; then
   echo "Hostname updated to: $(hostname)"
 fi
 
+
+
 ## 0.5 Rocky ajust current mirrorlist to official source for OSPP compatibility
+echo "Adjusting repository files for strong certificate keys..."
+for repo in /etc/yum.repos.d/*.repo; do
+  if grep -q "mirrors.rockylinux.org" "$repo"; then
+    echo "Modifying $repo"
+    # Comment out mirrorlist lines
+    sed -i 's|^mirrorlist=.*|#&|' "$repo"
+    # Uncomment or add baseurl lines that point to the official download site.
+    # For example, for BaseOS, AppStream, and Extras:
+    if grep -q "^#baseurl=" "$repo"; then
+      sed -i 's|^#baseurl=|baseurl=|g' "$repo"
+    else
+      # If there is no baseurl, insert one based on the repo id.
+      # (This example assumes the repo id is in the filename.)
+      case "$repo" in
+        *BaseOS*.repo)
+          echo "baseurl=https://dl.rockylinux.org/$contentdir/$releasever/BaseOS/$basearch/os/" >> "$repo"
+          ;;
+        *AppStream*.repo)
+          echo "baseurl=https://dl.rockylinux.org/$contentdir/$releasever/AppStream/$basearch/os/" >> "$repo"
+          ;;
+        *Extras*.repo)
+          echo "baseurl=https://dl.rockylinux.org/$contentdir/$releasever/Extras/$basearch/os/" >> "$repo"
+          ;;
+      esac
+    fi
+  fi
+done
+
 
 
 ## 1. Upgrade to 'Protected Profile' and Clear Firewall Rules
@@ -68,52 +101,45 @@ fi
 # Ensure the scap-security-guide package is installed.
 if ! rpm -q scap-security-guide &>/dev/null; then
     echo "scap-security-guide package is missing. Installing..."
-    sudo dnf install -y scap-security-guide || { echo "Installation failed. Exiting."; exit 1; }
+    dnf install -y scap-security-guide || { echo "Installation failed. Exiting."; exit 1; }
 fi
 
 echo "Using SCAP file: $SCAP_FILE"
-
-# Workaround for the rule "Ensure Red Hat GPG Key Installed":
-# This rule expects a file at /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release.
-# On Rocky Linux, the GPG key is provided at /etc/pki/rpm-gpg/RPM-GPG-KEY-rocky.
-# Instead of a symlink, copy the Rocky key to the expected location.
-#REDHAT_KEY="/etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release"
-#ROCKY_KEY="/etc/pki/rpm-gpg/RPM-GPG-KEY-rocky"
-
-#if [ ! -f "$REDHAT_KEY" ]; then
-#    if [ -f "$ROCKY_KEY" ]; then
-#        echo "Copying Rocky GPG key to $REDHAT_KEY"
-#        sudo cp "$ROCKY_KEY" "$REDHAT_KEY"
-#        if [ $? -ne 0 ]; then
-#            echo "Error: Failed to copy the Rocky GPG key."
-#            exit 1
-#        fi
-#    else
-#        echo "Error: Rocky Linux GPG key not found at $ROCKY_KEY."
-#        exit 1
-#    fi
-#else
-#    echo "GPG key already exists at $REDHAT_KEY"
-#fi
 
 # Install OpenSCAP and the SCAP Security Guide
 echo "Installing OpenSCAP and SCAP Security Guide..."
 dnf install -y openscap-scanner scap-security-guide
 
-# Apply the 'protected' security profile
+# Apply the 'OSPP' security profile
 echo "Applying the 'protected' security profile..."
 oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_ospp --remediate $SCAP_FILE
 
 # Clear existing iptables rules (if you use them)
+echo "Clearing the iptables 4 & 6..."
 iptables -F
 ip6tables -F
 
+
+
 ## 2. Install Docker and Docker Compose
+echo "Removing conflicting packages for Docker..."
+dnf remove docker \
+                  docker-client \
+                  docker-client-latest \
+                  docker-common \
+                  docker-latest \
+                  docker-latest-logrotate \
+                  docker-logrotate \
+                  docker-engine \
+                  podman \
+                  runc
+
 echo "Installing prerequisites for Docker..."
 dnf install -y dnf-plugins-core curl ca-certificates
 
 echo "Adding Docker's official repository..."
-dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+dnf -y install dnf-plugins-core
+dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
 
 echo "Updating package index with Docker repo..."
 dnf update -y
@@ -129,6 +155,8 @@ echo "Docker Socket permissions set to 660."
 echo "Restarting Docker service..."
 systemctl restart docker
 echo "Docker service restarted."
+
+
 
 ## 3. Set up Firewall Rules (IPv4 & IPv6)
 echo "Setting up IPv4 firewall rules..."
@@ -149,6 +177,8 @@ ip6tables -A INPUT -p tcp --dport 22 -j ACCEPT
 ip6tables -A INPUT -p tcp --dport 10000 -j ACCEPT
 ip6tables -P INPUT DROP
 
+
+
 ## 4. Install Webmin
 echo "Downloading Webmin repository setup script..."
 curl -o webmin-setup-repos.sh https://raw.githubusercontent.com/webmin/webmin/master/webmin-setup-repos.sh
@@ -162,11 +192,15 @@ dnf update -y
 echo "Installing Webmin..."
 dnf install -y webmin
 
+
+
 ## 5. Install Docker Webmin Module
 echo "Installing the Docker Webmin module..."
 wget -O docker.wbm.gz https://github.com/dave-lang/webmin-docker/releases/latest/download/docker.wbm.gz
 gunzip -f docker.wbm.gz
 /usr/share/webmin/install-module.pl docker.wbm
+
+
 
 ## 6. Install Fail2Ban and PAM Authentication
 echo "Enabling EPEL repository for extra packages..."
@@ -198,6 +232,8 @@ EOF
 echo "Restarting and enabling Fail2Ban..."
 systemctl restart fail2ban
 systemctl enable fail2ban
+
+
 
 ## 7. Install and Configure Bind (DNS)
 echo "Installing Bind and utilities..."
@@ -250,6 +286,8 @@ echo "Restarting Bind..."
 systemctl restart named
 systemctl enable named
 
+
+
 ## 8. Install Zip and System Cleanup
 echo "Installing zip..."
 dnf install -y zip
@@ -260,6 +298,8 @@ dnf autoremove -y
 dnf clean all
 systemctl restart webmin
 /usr/share/webmin/reload
+
+
 
 ## Finishing Up
 echo "-------------------------------------------------"
