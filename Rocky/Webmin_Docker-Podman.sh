@@ -40,7 +40,7 @@ SERVER_IPV6=$(ip -6 route get 2001:4860:4860::8888 2>/dev/null | awk '{print $7;
 
 
 ## 0. Introductory Output
-echo "Ubuntu Webmin Docker v1.08"
+echo "Ubuntu Webmin Docker v1.09"
 echo "IPv4 address: $SERVER_IP"
 echo "IPv6 address: $SERVER_IPV6"
 echo "Hostname: $(hostname)"
@@ -121,40 +121,13 @@ ip6tables -F
 
 
 
-## 2. Install Docker and Docker Compose
-echo "Removing conflicting packages for Docker..."
-dnf remove docker \
-                  docker-client \
-                  docker-client-latest \
-                  docker-common \
-                  docker-latest \
-                  docker-latest-logrotate \
-                  docker-logrotate \
-                  docker-engine \
-                  podman \
-                  runc
+## 2. Install Docker-Podman
+echo "Installing Docker-Podman..."
+dnf install -y podman-docker ca-certificates
 
-echo "Installing prerequisites for Docker..."
-dnf install -y dnf-plugins-core curl ca-certificates
-
-echo "Adding Docker's official repository..."
-dnf -y install dnf-plugins-core
-dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
-
-echo "Updating package index with Docker repo..."
-dnf update -y
-
-echo "Installing Docker Engine, CLI, containerd, and Docker Compose plugin..."
-dnf install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-
-echo "Restricting Docker socket access..."
-chown root:docker /var/run/docker.sock
-chmod 660 /var/run/docker.sock
-echo "Docker Socket permissions set to 660."
-
-echo "Restarting Docker service..."
-systemctl restart docker
-echo "Docker service restarted."
+echo "Restarting Podman service..."
+systemctl restart podman
+echo "Docker Podman restarted."
 
 
 
