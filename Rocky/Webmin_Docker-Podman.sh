@@ -40,7 +40,7 @@ SERVER_IPV6=$(ip -6 route get 2001:4860:4860::8888 2>/dev/null | awk '{print $7;
 
 
 ## 0. Introductory Output
-echo "Ubuntu Webmin Docker v1.13"
+echo "Ubuntu Webmin Docker v1.14"
 echo "IPv4 address: $SERVER_IP"
 echo "IPv6 address: $SERVER_IPV6"
 echo "Hostname: $(hostname)"
@@ -148,8 +148,8 @@ ip6tables -P INPUT DROP
 
 ## 4. Install Webmin
 echo "Adding Webmin Repository..."
-curl -k -o /tmp/jcameron-key.asc https://download.webmin.com/jcameron-key.asc
-rpm --import /tmp/jcameron-key.asc
+curl -k -o jcameron-key.asc https://download.webmin.com/jcameron-key.asc
+rpm --import jcameron-key.asc
 
 cat > /etc/yum.repos.d/webmin.repo <<'EOF'
 [Webmin]
