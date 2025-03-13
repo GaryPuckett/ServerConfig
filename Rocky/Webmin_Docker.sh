@@ -49,10 +49,18 @@ if [[ -n "$NEW_HOSTNAME" ]]; then
   echo "Hostname updated to: $(hostname)"
 fi
 
-## 1. Update System and Clear Firewall Rules
+## 1. Upgrade to 'Protected Profile' and Clear Firewall Rules
 echo "Updating package index and upgrading packages..."
 dnf update -y
 dnf upgrade -y
+
+# Install OpenSCAP and the SCAP Security Guide
+echo "Installing OpenSCAP and SCAP Security Guide..."
+dnf install -y openscap-scanner scap-security-guide
+
+# Apply the 'protected' security profile
+echo "Applying the 'protected' security profile..."
+oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_protection --remediate /usr/share/xml/scap/ssg/content/ssg-rl8-ds.xml
 
 # Clear existing iptables rules (if you use them)
 iptables -F
