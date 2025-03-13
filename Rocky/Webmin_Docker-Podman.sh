@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ## SSH Oneliner
-#  curl -fsSL https://raw.githubusercontent.com/GaryPuckett/Hypercuube_Scripts/main/Rocky/Webmin_Docker.sh --insecure | sudo bash
+#  curl -fsSL https://raw.githubusercontent.com/GaryPuckett/Hypercuube_Scripts/main/Rocky/Webmin_Docker-Podman.sh --insecure | sudo bash
 
 #  This script is meant to be ran on a fresh ubuntu installation to install:
 #  Docker + Compose,         | -Enables Namespace Mapping
@@ -40,7 +40,7 @@ SERVER_IPV6=$(ip -6 route get 2001:4860:4860::8888 2>/dev/null | awk '{print $7;
 
 
 ## 0. Introductory Output
-echo "Ubuntu Webmin Docker v1.09"
+echo "Ubuntu Webmin Docker v1.10"
 echo "IPv4 address: $SERVER_IP"
 echo "IPv6 address: $SERVER_IPV6"
 echo "Hostname: $(hostname)"
@@ -90,7 +90,7 @@ echo "Updating package index and upgrading packages..."
 dnf update -y
 dnf upgrade -y
 
-# Determine the appropriate SCAP content file based on your OS version.
+# Ensure known SCAP file exists.
 if [ -f /usr/share/xml/scap/ssg/content/ssg-rl9-ds.xml ]; then
     SCAP_FILE="/usr/share/xml/scap/ssg/content/ssg-rl9-ds.xml"
 else
@@ -114,7 +114,7 @@ dnf install -y openscap-scanner scap-security-guide
 echo "Applying the 'protected' security profile..."
 oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_ospp --remediate $SCAP_FILE
 
-# Clear existing iptables rules (if you use them)
+# Clear existing iptables rules
 echo "Clearing the iptables 4 & 6..."
 iptables -F
 ip6tables -F
@@ -123,11 +123,7 @@ ip6tables -F
 
 ## 2. Install Docker-Podman
 echo "Installing Docker-Podman..."
-dnf install -y podman-docker ca-certificates
-
-echo "Restarting Podman service..."
-systemctl restart podman
-echo "Docker Podman restarted."
+dnf install -y podman-docker
 
 
 
@@ -154,7 +150,7 @@ ip6tables -P INPUT DROP
 
 ## 4. Install Webmin
 echo "Downloading Webmin repository setup script..."
-curl -o webmin-setup-repos.sh https://raw.githubusercontent.com/webmin/webmin/master/webmin-setup-repos.sh
+curl -o webmin-setup-repos.sh https://raw.githubusercontent.com/webmin/webmin/master/webmin-setup-repos.sh --insecure
 
 echo "Running Webmin repository setup script..."
 sh webmin-setup-repos.sh -f
@@ -163,13 +159,13 @@ echo "Updating package index for Webmin..."
 dnf update -y
 
 echo "Installing Webmin..."
-dnf install -y webmin
+dnf install webmin
 
 
 
 ## 5. Install Docker Webmin Module
 echo "Installing the Docker Webmin module..."
-wget -O docker.wbm.gz https://github.com/dave-lang/webmin-docker/releases/latest/download/docker.wbm.gz
+wget -O docker.wbm.gz https://github.com/dave-lang/webmin-docker/releases/latest/download/docker.wbm.gz --insecure
 gunzip -f docker.wbm.gz
 /usr/share/webmin/install-module.pl docker.wbm
 
