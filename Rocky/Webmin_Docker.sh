@@ -37,7 +37,7 @@ SERVER_IP=$(ip -4 route get 1.1.1.1 | awk '{print $7; exit}')
 SERVER_IPV6=$(ip -6 route get 2001:4860:4860::8888 2>/dev/null | awk '{print $7; exit}')
 
 ## 0. Introductory Output
-echo "Ubuntu Webmin Docker v1.03"
+echo "Ubuntu Webmin Docker v1.04"
 echo "IPv4 address: $SERVER_IP"
 echo "IPv6 address: $SERVER_IPV6"
 echo "Hostname: $(hostname)"
@@ -73,6 +73,23 @@ if ! rpm -q scap-security-guide &>/dev/null; then
 fi
 
 echo "Using SCAP file: $SCAP_FILE"
+
+# Workaround for the rule "Ensure Red Hat GPG Key Installed":
+# This rule expects a file named /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release.
+# On Rocky Linux, the GPG key is typically at /etc/pki/rpm-gpg/RPM-GPG-KEY-rocky.
+# Create a symlink if the expected file is missing.
+REDHAT_KEY="/etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release"
+ROCKY_KEY="/etc/pki/rpm-gpg/RPM-GPG-KEY-rocky"
+
+if [ ! -f "$REDHAT_KEY" ]; then
+    if [ -f "$ROCKY_KEY" ]; then
+        echo "Creating symlink: $REDHAT_KEY -> $ROCKY_KEY"
+        sudo ln -s "$ROCKY_KEY" "$REDHAT_KEY"
+    else
+        echo "Error: Rocky Linux GPG key not found at $ROCKY_KEY."
+        exit 1
+    fi
+fi
 
 # Reapply the protected profile with remediation.
 sudo oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_ospp --remediate "$SCAP_FILE"
