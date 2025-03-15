@@ -28,7 +28,7 @@ SERVER_IPV6=$(ip -6 route get 2001:4860:4860::8888 2>/dev/null | awk '{print $7;
 
 
 ## 0. Introductory Output
-echo "Cockpit Rocky-Linux Podman Setup Script v1.17"
+echo "Cockpit Rocky-Linux Podman Setup Script v1.18"
 echo "IPv4 address: $SERVER_IP"
 echo "IPv6 address: $SERVER_IPV6"
 echo "Hostname: $(hostname)"
@@ -221,20 +221,35 @@ systemctl restart named
 systemctl enable named
 
 
+## 5. Make irqbalance work
+# Create the drop-in directory for irqbalance service overrides
+ mkdir -p /etc/systemd/system/irqbalance.service.d
+# Write the override configuration to disable private user namespaces
+tee /etc/systemd/system/irqbalance.service.d/override.conf > /dev/null <<'EOF'
+[Service]
+PrivateUsers=no
+EOF
+
+# Reload systemd to pick up the changes
+systemctl daemon-reload
+# Restart irqbalance for the changes to take effect
+systemctl restart irqbalance
+
+echo "Override applied: PrivateUsers has been set to no for irqbalance."
+
+
 
 echo "Performing system cleanup..."
 dnf update -y
 dnf autoremove -y
 dnf clean all
-systemctl restart webmin
-/usr/share/webmin/reload
 
 ## LAST Enable Cockpit
 systemctl enable --now cockpit.socket
 
 ## Display
 echo "-------------------------------------------------"
-echp ""
+echo ""
 echo "Installation complete!"
 echo "Hostname: $(hostname)"
 echo "Cockpit is available at: https://$SERVER_IP:9090"
