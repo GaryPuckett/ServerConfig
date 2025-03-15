@@ -28,7 +28,7 @@ SERVER_IPV6=$(ip -6 route get 2001:4860:4860::8888 2>/dev/null | awk '{print $7;
 
 
 ## 0. Introductory Output
-echo "Cockpit Rocky-Linux Podman Setup Script v1.15"
+echo "Cockpit Rocky-Linux Podman Setup Script v1.16"
 echo "IPv4 address: $SERVER_IP"
 echo "IPv6 address: $SERVER_IPV6"
 echo "Hostname: $(hostname)"
@@ -126,6 +126,7 @@ ip6tables -P INPUT DROP
 
 
 ## 3. Install Fail2ban
+dnf install -y epel-release
 dnf install -y fail2ban
 
 # Backup original jail configuration if it exists
