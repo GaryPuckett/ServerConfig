@@ -243,6 +243,7 @@ EOF
 systemctl daemon-reload
 # Restart irqbalance for the changes to take effect
 systemctl restart irqbalance
+systemctl restart rescue
 
 echo "Override applied: PrivateUsers has been set to no for irqbalance."
 
